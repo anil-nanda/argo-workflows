@@ -1,0 +1,60 @@
+kind: Workflow
+metadata:
+  generateName: mutistage-workflow-2-
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: addTwoNumbers
+            template: addnum
+            arguments: 
+              parameters: 
+              - name: "a"
+                value: "2"
+              - name: "b"
+                value: "5"
+        - - name: addTen
+            template: addnum
+            arguments: 
+              parameters: 
+              - name: "a"
+                value: "{{steps.addTwoNumbers.outputs.result}}"
+              - name: "b"
+                value: "10"
+          - name: parallelWorkflow
+            template: startflow
+
+        - - name: sayHello
+            template: sayhello
+            arguments: 
+              parameters: 
+              - name: "result"
+                value: "{{steps.addTen.outputs.result}}"
+            when: "{{steps.addTen.outputs.result}} > 10"
+
+    - name: addnum
+      inputs: 
+        parameters: 
+        - name: "a"
+        - name: "b"
+      container:
+        image: alpine
+        command: [sh, -c]
+        args: ["echo $(( {{inputs.parameters.a}} + {{inputs.parameters.b}}))"]
+
+    - name: startflow
+      container:
+        image: alpine
+        command: [sh, -c]
+        args: ["echo 'start parallel job'"]
+
+    - name: sayhello
+      inputs: 
+        parameters: 
+        - name: "result"
+      container:
+        image: alpine
+        command: [sh, -c]
+        args: ["echo 'Result is {{ inputs.parameters.result}}'"]

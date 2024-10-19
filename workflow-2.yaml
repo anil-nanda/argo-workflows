@@ -1,0 +1,27 @@
+kind: Workflow
+metadata:
+  generateName: multiple-workflows-
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: addFour
+            template: addfour
+            arguments: {parameters: [{name: "a", value: "2"}]}
+        - - name: sayHello
+            template: sayhello
+            when: "{{steps.addFour.outputs.result}} > 10"
+    - name: addfour
+      inputs: {parameters: [{name: "a"}]}
+      container:
+        image: alpine
+        command: [sh, -c]
+        args: ["echo $(( {{inputs.parameters.a}} + 4))"]
+    - name: sayhello
+      container:
+        image: alpine
+        command: [sh, -c]
+        args: [echo "Hello world"]
+
